@@ -31,17 +31,17 @@ import com.waz.model.{RemoteInstant, UserData, UserId}
 import com.waz.threading.Threading
 import com.waz.utils.events.Signal
 import com.waz.utils.returning
-import com.waz.zclient.common.controllers.ScreenController.MessageDetailsParams
 import com.waz.zclient.common.controllers.ScreenController
+import com.waz.zclient.common.controllers.ScreenController.MessageDetailsParams
+import com.waz.zclient.messages.LikesController._
 import com.waz.zclient.pages.main.conversation.ConversationManagerFragment
 import com.waz.zclient.paintcode.{GenericStyleKitView, WireStyleKit}
 import com.waz.zclient.participants.ParticipantsAdapter
 import com.waz.zclient.ui.text.{GlyphTextView, TypefaceTextView}
 import com.waz.zclient.utils.ContextUtils.getColor
-import com.waz.zclient.utils.{RichView, ZTimeFormatter}
+import com.waz.zclient.utils.RichView
+import com.waz.zclient.utils.Time.SameDayTimeStamp
 import com.waz.zclient.{FragmentHelper, R}
-import com.waz.zclient.messages.LikesController._
-import org.threeten.bp.DateTimeUtils
 
 class LikesAndReadsFragment extends FragmentHelper {
   import LikesAndReadsFragment._
@@ -148,8 +148,9 @@ class LikesAndReadsFragment extends FragmentHelper {
 
   private lazy val timestamp = returning(view[TypefaceTextView](R.id.message_timestamp)) { vh =>
     message.onUi { msg =>
-      val ts     = ZTimeFormatter.getSingleMessageDateTime(getContext, DateTimeUtils.toDate(msg.time.instant))
-      val editTs = ZTimeFormatter.getSingleMessageDateTime(getContext, DateTimeUtils.toDate(msg.editTime.instant))
+
+      val ts     = SameDayTimeStamp(msg.time.instant).string
+      val editTs = SameDayTimeStamp(msg.editTime.instant).string
       val text =
         s"${getString(R.string.message_details_sent)}: $ts" +
           (if (msg.editTime != RemoteInstant.Epoch) s"\n${getString(R.string.message_details_last_edited)}: $editTs" else "")
@@ -185,10 +186,8 @@ class LikesAndReadsFragment extends FragmentHelper {
 
   private var readTimestamps = Map.empty[UserId, RemoteInstant]
 
-  private def createSubtitle(user: UserData)(implicit context: Context): String =
-    readTimestamps.get(user.id).fold("")(time =>
-      ZTimeFormatter.getSingleMessageDateTime(context, DateTimeUtils.toDate(time.instant))
-    )
+  private def createSubtitle(user: UserData): String =
+    readTimestamps.get(user.id).fold("")(time => SameDayTimeStamp(time.instant).string)
 
   override def onCreateView(inflater: LayoutInflater, viewGroup: ViewGroup, savedInstanceState: Bundle): View =
     inflater.inflate(R.layout.fragment_likes_and_reads, viewGroup, false)
